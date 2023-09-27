@@ -48,7 +48,7 @@ public struct MockMacro: PeerMacro {
             .joined(separator: "\n\n")
         
         return ["""
-        \nfinal class \(raw: mockClassName): \(protocolDecl.name) {
+        \nfinal class \(raw: mockClassName): \(raw: protocolName) {
         \(raw: mockBody)
         }
         """]

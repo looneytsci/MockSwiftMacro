@@ -11,11 +11,77 @@ import SwiftSyntaxMacrosTestSupport
 import XCTest
 
 final class MockMacroTests: XCTestCase {
+    func testMockMacro_funcWithOptionalParameter() {
+        assertMacroExpansion(
+            """
+            @Mock
+            protocol IService {
+                func doWork(arg: String?)
+            }
+            """,
+            expandedSource:
+            """
+            protocol IService {
+                func doWork(arg: String?)
+            }
+            
+            final class IServiceMock: IService {
+                // MARK: - doWork
+            
+                func doWork(arg: String?) {
+                    doWorkCallsCount += 1
+                    _ = doWorkClosure?(arg)
+                }
+                var doWorkCallsCount = 0
+                var doWorkCalled: Bool {
+                    doWorkCallsCount > 0
+                }
+                var doWorkClosure: ((String?) -> Void)?
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testMockMacro_funcWithOptionalReturnValue() {
+        assertMacroExpansion(
+            """
+            @Mock
+            protocol IService {
+                func doWork() -> String?
+            }
+            """,
+            expandedSource:
+            """
+            protocol IService {
+                func doWork() -> String?
+            }
+            
+            final class IServiceMock: IService {
+                // MARK: - doWork
+            
+                func doWork() -> String? {
+                    doWorkCallsCount += 1
+                    _ = doWorkClosure?()
+                    return doWorkReturnValue
+                }
+                var doWorkCallsCount = 0
+                var doWorkCalled: Bool {
+                    doWorkCallsCount > 0
+                }
+                var doWorkClosure: (() -> String?)?
+                var doWorkReturnValue: String?
+            }
+            """,
+            macros: testMacros
+        )
+    }
+
     func testMockMacro_variablesWithFunctions() {
         assertMacroExpansion(
             """
             @Mock
-            protocol IService: AnyObject {
+            protocol IService {
                 var worker: String { get set }
                 var optionalWorker: String? { get set }
                 var forceUnwrappedWorker: String! { get set }
@@ -28,7 +94,7 @@ final class MockMacroTests: XCTestCase {
             """,
             expandedSource:
             """
-            protocol IService: AnyObject {
+            protocol IService {
                 var worker: String { get set }
                 var optionalWorker: String? { get set }
                 var forceUnwrappedWorker: String! { get set }

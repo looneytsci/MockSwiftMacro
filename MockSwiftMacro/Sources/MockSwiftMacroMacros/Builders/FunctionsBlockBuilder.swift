@@ -7,6 +7,18 @@
 
 import SwiftSyntax
 
+fileprivate struct FunctionArgumentType {
+    let typeSyntax: TokenSyntax
+    let isOptional: Bool
+
+    var postfixMark: String {
+        isOptional ? "?" : ""
+    }
+    var typeName: String {
+        typeSyntax.text + postfixMark
+    }
+}
+
 enum FunctionsBlockBuilder {
     // TODO: Добавить поддержку firstName secondName у имен параметров функций
     // TODO: Подумать что ретарнить Closure в функциях с возвращаемым значением
@@ -18,31 +30,34 @@ enum FunctionsBlockBuilder {
             let funcName = function.name
             
             let parameterClause = function.signature.parameterClause
-            let returnTypeName = function.signature.returnClause?.type.as(IdentifierTypeSyntax.self)?.name.text ?? ""
+            let returnType = makeReturnType(returnClause: function.signature.returnClause)
             
             let parameters = parameterClause.parameters
                 .compactMap { $0.as(FunctionParameterSyntax.self) }
             let parametersInSignature = parameters
-                .map { "\($0.firstName): \($0.type.as(IdentifierTypeSyntax.self)?.name ?? "")" }
+                .map { "\($0.firstName): \(makeParameterType(parameter: $0)?.typeName ?? "")" }
                 .joined(separator: ", ")
             let parameterTypes = parameters
-                .map { "\($0.type.as(IdentifierTypeSyntax.self)?.name ?? "")" }
+                .compactMap { makeParameterType(parameter: $0)?.typeName }
                 .filter { $0 != "" }
                 .joined(separator: ", ")
             let parameterNames = parameters
                 .map { "\($0.firstName)" }
                 .joined(separator: ", ")
             
-            let hasReturnType = !returnTypeName.isEmpty
-            let returnType = hasReturnType ? TokenSyntax(stringLiteral: [" -> ", returnTypeName].joined()) : ""
-            let returnValueStroke = hasReturnType ? TokenSyntax(stringLiteral: "var \(funcName)ReturnValue: \(returnTypeName)!") : ""
+            let hasReturnType = returnType != nil
+            let returnTypeName = returnType?.typeName ?? ""
+            let returnTypeSyntax = hasReturnType ? TokenSyntax(stringLiteral: [" -> ", returnTypeName].joined()) : ""
+            let returnValuePostfix = (returnType?.isOptional ?? false) ? "" : "!"
+            let returnTypeWithPostfix = returnTypeName + returnValuePostfix
+            let returnValueStroke = hasReturnType ? TokenSyntax(stringLiteral: "var \(funcName)ReturnValue: \(returnTypeWithPostfix)") : ""
             let returnValueCallingStroke = hasReturnType ? TokenSyntax(stringLiteral: "\nreturn \(funcName)ReturnValue") : ""
             let closureReturnType = hasReturnType ? returnTypeName : "Void"
             
             functionBlocks.append("""
             // MARK: - \(function.name)
             
-            func \(funcName)(\(parametersInSignature))\(returnType) {
+            func \(funcName)(\(parametersInSignature))\(returnTypeSyntax) {
                 \(funcName)CallsCount += 1
                 _ = \(funcName)Closure?(\(parameterNames))\(returnValueCallingStroke)
             }
@@ -55,5 +70,27 @@ enum FunctionsBlockBuilder {
         }
         
         return .init(stringLiteral: functionBlocks.joined(separator: "\n\n"))
+    }
+
+    private static func makeReturnType(returnClause: ReturnClauseSyntax?) -> FunctionArgumentType? {
+        if let type = returnClause?.type.as(OptionalTypeSyntax.self),
+           let name = type.wrappedType.as(IdentifierTypeSyntax.self)?.name {
+            return .init(typeSyntax: name, isOptional: true)
+        } else if let type = returnClause?.type.as(IdentifierTypeSyntax.self)?.name {
+            return .init(typeSyntax: type, isOptional: false)
+        }
+
+        return nil
+    }
+
+    private static func makeParameterType(parameter: FunctionParameterSyntax) -> FunctionArgumentType? {
+        if let type = parameter.type.as(OptionalTypeSyntax.self),
+           let name = type.wrappedType.as(IdentifierTypeSyntax.self)?.name {
+            return .init(typeSyntax: name, isOptional: true)
+        } else if let type = parameter.type.as(IdentifierTypeSyntax.self)?.name {
+            return .init(typeSyntax: type, isOptional: false)
+        }
+
+        return nil
     }
 }
