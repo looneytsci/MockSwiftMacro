@@ -21,8 +21,6 @@ fileprivate struct FunctionArgumentType {
 
 enum FunctionsBlockBuilder {
     // TODO: Добавить поддержку firstName secondName у имен параметров функций
-    // TODO: Подумать что ретарнить Closure в функциях с возвращаемым значением
-    // TODO: Проверить опционалы
     static func makeFunctionsBlock(functions: [FunctionDeclSyntax]) -> TokenSyntax {
         var functionBlocks: [String] = []
         

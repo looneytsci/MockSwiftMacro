@@ -21,7 +21,6 @@ enum MockMacroError: CustomStringConvertible, Error {
     }
 }
 
-/// UserDefaultsFacadeMock
 public struct MockMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
