@@ -11,6 +11,42 @@ import SwiftSyntaxMacrosTestSupport
 import XCTest
 
 final class MockMacroTests: XCTestCase {
+    func testMockMacro_associatedType() {
+        assertMacroExpansion(
+            """
+            @Mock(associatedType: "String")
+            protocol IService {
+                associatedtype Return
+
+                func doWork() -> Return
+            }
+            """, 
+            expandedSource: """
+            protocol IService {
+                associatedtype Return
+            
+                func doWork() -> Return
+            }
+
+            final class IServiceMock: IService {
+                // MARK: - doWork
+            
+                func doWork() -> String {
+                    doWorkCallsCount += 1
+                    _ = doWorkClosure?(arg)
+                }
+                var doWorkCallsCount = 0
+                var doWorkCalled: Bool {
+                    doWorkCallsCount > 0
+                }
+                var doWorkClosure: (() -> String)?
+                var doWorkReturnValue: String!
+            }
+            """,
+            macros: testMacros
+        )
+    }
+
     func testMockMacro_funcWithOptionalParameter() {
         assertMacroExpansion(
             """
@@ -90,6 +126,10 @@ final class MockMacroTests: XCTestCase {
                 func doWorkWithArgs(string: String, arg2: Bool)
                 func doWorkWithReturnValue() -> String
                 func doWorkWithArgsAndReturnValue(string: String) -> String
+                func doWork2()
+                func doWorkWithArgs2(string: String, arg2: Bool)
+                func doWorkWithReturnValue2() -> String
+                func doWorkWithArgsAndReturnValue2(string: String) -> String
             }
             """,
             expandedSource:

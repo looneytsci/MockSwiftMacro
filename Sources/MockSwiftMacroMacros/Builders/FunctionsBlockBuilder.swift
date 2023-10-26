@@ -21,7 +21,11 @@ fileprivate struct FunctionArgumentType {
 
 enum FunctionsBlockBuilder {
     // TODO: Добавить поддержку firstName secondName у имен параметров функций
-    static func makeFunctionsBlock(functions: [FunctionDeclSyntax]) -> TokenSyntax {
+    static func makeFunctionsBlock(
+        functions: [FunctionDeclSyntax],
+        associatedType: TokenSyntax?,
+        typealiaseType: TokenSyntax?
+    ) -> TokenSyntax {
         var functionBlocks: [String] = []
         
         functions.forEach { function in
